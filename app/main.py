@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routes import document_routes, metadata_routes
+from app.routes import document_routes, metadata_routes, category_routes
 from app.logging_config import setup_logging
 
 # Initialize logging
@@ -37,6 +37,7 @@ app.add_middleware(
 # Include API routes with prefix
 app.include_router(document_routes.router, prefix="/api")
 app.include_router(metadata_routes.router, prefix="/api")
+app.include_router(category_routes.router, prefix="/api")
 
 # Mount static files directory
 app.mount("/static", StaticFiles(directory="static"), name="static")

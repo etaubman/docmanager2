@@ -8,6 +8,7 @@ from enum import Enum
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Table, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.models.category import Category, document_type_categories
 
 class MetadataType(str, Enum):
     TEXT = "text"
@@ -56,3 +57,4 @@ class DocumentType(Base):
     # Relationships
     metadata_fields = relationship("MetadataField", secondary=document_type_metadata, back_populates="document_types")
     documents = relationship("Document", back_populates="document_type")
+    categories = relationship("Category", secondary=document_type_categories, back_populates="document_types")
