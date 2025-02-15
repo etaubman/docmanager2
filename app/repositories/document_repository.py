@@ -9,6 +9,8 @@ from app.models.document import Document
 from app.schemas.document import DocumentCreate, DocumentUpdate
 from app.logging_config import get_logger
 from app.models.document_version import DocumentVersion
+from typing import Optional
+from sqlalchemy import cast, String, JSON  # updated import
 
 logger = get_logger(__name__)
 
@@ -29,7 +31,8 @@ class DocumentRepository:
                 content=document.content,
                 file_path=getattr(document, 'file_path', None),
                 file_name=getattr(document, 'file_name', None),
-                file_size=getattr(document, 'file_size', None)
+                file_size=getattr(document, 'file_size', None),
+                metadata_values=getattr(document, 'metadata_values', None)
             )
             db.add(db_document)
             db.commit()
@@ -125,3 +128,23 @@ class DocumentRepository:
     def get_latest_version(db: Session, document_id: int):
         """Retrieve the latest version of a document by its ID"""
         return db.query(DocumentVersion).filter(DocumentVersion.document_id == document_id).order_by(DocumentVersion.version_number.desc()).first()
+
+    @staticmethod
+    def search_documents(
+        db: Session,
+        filename: Optional[str] = None,
+        title: Optional[str] = None,
+        metadata_filter: Optional[dict] = None,
+        skip: int = 0,
+        limit: int = 100
+    ) -> list:
+        query = db.query(Document)
+        if filename:
+            query = query.filter(Document.file_name.ilike(f"%{filename}%"))
+        if title:
+            query = query.filter(Document.title.ilike(f"%{title}%"))
+        if metadata_filter:
+            for key, value in metadata_filter.items():
+                # Updated metadata_values filter to use PostgreSQL JSON extraction "->>"
+                query = query.filter(Document.metadata_values.op("->>")(key) == value)
+        return query.offset(skip).limit(limit).all()

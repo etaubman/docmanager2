@@ -168,3 +168,39 @@ def test_update_document_type_fields(client):
     field2 = next(f for f in fields if f["id"] == field2_id)
     assert field1["name"] == "Field 1"
     assert field2["name"] == "Field 2"
+
+def test_invalid_metadata_field_creation(client):
+    """Test creating a metadata field with missing required fields"""
+    # For instance, missing 'name'
+    field_data = {
+        "description": "Missing name and field_type",
+    }
+    response = client.post("/api/metadata-fields/", json=field_data)
+    # Assuming validation error returns a 422 status code
+    assert response.status_code == 422
+
+def test_get_nonexistent_metadata_field(client):
+    """Test retrieving a non-existent metadata field"""
+    response = client.get("/api/metadata-fields/99999")
+    # Assuming not found returns a 404 status code
+    assert response.status_code == 404
+
+def test_create_document_type_with_invalid_metadata_field(client):
+    """Test creating a document type with an invalid metadata field reference.
+       Expect that invalid metadata_field_ids are ignored.
+    """
+    type_data = {
+        "name": "Invalid Type",
+        "description": "Test description",
+        "metadata_fields": [
+            {
+                "metadata_field_id": 99999,  # invalid id
+                "is_required": True
+            }
+        ]
+    }
+    response = client.post("/api/document-types/", json=type_data)
+    # Now expecting 200 and an empty metadata_fields array if the invalid field is ignored
+    assert response.status_code == 200
+    assert response.json()["name"] == "Invalid Type"
+    assert response.json()["metadata_fields"] == []

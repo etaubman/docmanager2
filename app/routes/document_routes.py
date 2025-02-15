@@ -4,7 +4,7 @@ Description: API routes for document management
 Purpose: Defines all HTTP endpoints for document operations with OpenAPI documentation
 """
 
-from fastapi import APIRouter, Depends, status, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 import json
@@ -125,6 +125,28 @@ async def upload_document(
     except Exception as e:
         logger.error(f"Error processing document upload: {str(e)}")
         raise
+
+# Moved search endpoint above routes using "/{document_id}" to avoid path conflicts.
+@router.get("/search",
+    response_model=List[Document],
+    summary="Search documents",
+    description="Search documents by filename, title, and metadata with optional pagination"
+)
+def search_documents(
+    filename: Optional[str] = Query(None, description="Filter by file name"),
+    title: Optional[str] = Query(None, description="Filter by title"),
+    metadata: Optional[str] = Query(None, description="JSON string to filter metadata"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1),
+    document_service: DocumentService = Depends(DocumentService)
+):
+    metadata_filter = None
+    if metadata:
+        try:
+            metadata_filter = json.loads(metadata)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid metadata JSON format")
+    return document_service.search_documents(filename, title, metadata_filter, skip, limit)
 
 @router.get("/download/{document_id}",
     summary="Download document file",

@@ -147,3 +147,78 @@ def test_document_versioning(client, test_uploads_dir):
     assert latest_resp.status_code == 200
     latest = latest_resp.json()
     assert latest["version_number"] == 2
+
+def create_document_helper(client, test_uploads_dir, title, file_content, metadata):
+    file_path = os.path.join(test_uploads_dir, "test.txt")
+    with open(file_path, "wb") as f:
+        f.write(file_content)
+    with open(file_path, "rb") as f:
+        files = {"file": ("test.txt", f, "text/plain")}
+        data = {"title": title, "metadata_values": json.dumps(metadata)}
+        response = client.post("/api/documents/", data=data, files=files)
+        return response
+
+def test_search_documents(client, test_uploads_dir):
+    """Test searching documents by title and metadata."""
+    # Create two documents with different metadata and titles
+    resp1 = create_document_helper(client, test_uploads_dir, "Report Q1", b"content1", {"category": "report", "author": "Alice"})
+    assert resp1.status_code == 201
+    resp2 = create_document_helper(client, test_uploads_dir, "Invoice 2022", b"content2", {"category": "invoice", "author": "Bob"})
+    assert resp2.status_code == 201
+
+    # Search by metadata category: report
+    search_params = {
+        "metadata": json.dumps({"category": "report"})
+    }
+    response = client.get("/api/documents/search", params=search_params)
+    assert response.status_code == 200
+    results = response.json()
+    assert len(results) == 1
+    assert results[0]["title"] == "Report Q1"
+
+    # Search by title substring "Invoice"
+    response = client.get("/api/documents/search", params={"title": "Invoice"})
+    assert response.status_code == 200
+    results = response.json()
+    assert len(results) == 1
+    assert results[0]["title"] == "Invoice 2022"
+
+    # Test paginated results by setting limit=1
+    response = client.get("/api/documents/search", params={"limit": 1})
+    assert response.status_code == 200
+    results = response.json()
+    assert len(results) == 1
+
+def test_create_document_without_file(client):
+    """Test creating a document without providing a file"""
+    data = {"title": "No File Document"}
+    response = client.post("/api/documents/", data=data)
+    # Expecting a validation error if file upload is required
+    assert response.status_code in (400, 422)
+
+def test_update_nonexistent_document(client):
+    """Test updating a non-existent document"""
+    update_data = {"title": "Non-existent", "content": "Nothing"}
+    response = client.put("/api/documents/99999", json=update_data)
+    # Expecting not found
+    assert response.status_code == 404
+
+def test_delete_nonexistent_document(client):
+    """Test deleting a non-existent document"""
+    response = client.delete("/api/documents/99999")
+    # Expecting not found
+    assert response.status_code == 404
+
+def test_download_nonexistent_document(client):
+    """Test downloading a non-existent document"""
+    response = client.get("/api/documents/download/99999")
+    # Expecting not found
+    assert response.status_code == 404
+
+def test_search_documents_no_match(client):
+    """Test searching with parameters that yield no results"""
+    response = client.get("/api/documents/search", params={"title": "NoSuchTitle", "limit": 1})
+    assert response.status_code == 200
+    results = response.json()
+    assert isinstance(results, list)
+    assert len(results) == 0

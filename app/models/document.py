@@ -36,9 +36,9 @@ class Document(Base):
     file_size = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    document_type_id = Column(Integer, ForeignKey('document_types.id'), nullable=True)
-    metadata_values = Column(JSON, default=dict)
-    
+    document_type_id = Column(Integer, ForeignKey("document_types.id"), nullable=True)
+    metadata_values = Column(JSON, nullable=True)
+
     # Relationships
     document_type = relationship("DocumentType", back_populates="documents")
     versions = relationship("DocumentVersion", back_populates="document", order_by="DocumentVersion.version_number", cascade="all, delete-orphan")

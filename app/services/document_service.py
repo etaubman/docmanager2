@@ -178,3 +178,15 @@ class DocumentService:
         if not version:
             raise HTTPException(status_code=404, detail="No version available")
         return version
+
+    def search_documents(
+        self,
+        filename: Optional[str] = None,
+        title: Optional[str] = None,
+        metadata_filter: Optional[dict] = None,
+        skip: int = 0,
+        limit: int = 100
+    ) -> list:
+        return self.document_repo.search_documents(
+            self.db, filename, title, metadata_filter, skip, limit
+        )

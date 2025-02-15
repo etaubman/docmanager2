@@ -12,6 +12,11 @@ class DocumentBase(BaseModel):
     """Base schema with common document attributes"""
     title: str
     content: str
+    file_path: str | None = None
+    file_name: str | None = None
+    file_size: int | None = None
+    document_type_id: int | None = None
+    metadata_values: dict | None = None
 
 class DocumentCreate(DocumentBase):
     """Schema for document creation requests"""
@@ -25,13 +30,12 @@ class DocumentFile(BaseModel):
     """Schema for file upload"""
     title: str
     content: str = ""
+    document_type_id: int | None = None
+    metadata_values: dict | None = None
 
 class Document(DocumentBase):
     """Schema for document responses, includes all document fields"""
     id: int
-    file_path: str | None = None
-    file_name: str | None = None
-    file_size: int | None = None
     created_at: datetime
     updated_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
