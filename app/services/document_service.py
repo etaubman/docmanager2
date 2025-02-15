@@ -164,3 +164,17 @@ class DocumentService:
         logger.info(f"Retrieving file from storage: {file_path}")
         async for chunk in self.storage.get_file(file_path):
             yield chunk
+
+    # New methods for versioning
+    def get_document_versions(self, document_id: int) -> list:
+        # Ensure document exists
+        self.get_document(document_id)
+        return self.document_repo.get_versions(self.db, document_id)
+
+    def get_latest_document_version(self, document_id: int):
+        # Ensure document exists
+        self.get_document(document_id)
+        version = self.document_repo.get_latest_version(self.db, document_id)
+        if not version:
+            raise HTTPException(status_code=404, detail="No version available")
+        return version

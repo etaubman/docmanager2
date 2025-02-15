@@ -109,3 +109,41 @@ def test_download_document(client, test_uploads_dir):
     assert response.status_code == 200
     assert response.headers["content-disposition"] == 'attachment; filename="test.txt"'
     assert response.content == content
+
+def test_document_versioning(client, test_uploads_dir):
+    """Test document versioning on update and retrieval of versions"""
+    # Create a document
+    with open(os.path.join(test_uploads_dir, "test.txt"), "wb") as f:
+        f.write(b"original content")
+    with open(os.path.join(test_uploads_dir, "test.txt"), "rb") as f:
+        files = {"file": ("test.txt", f, "text/plain")}
+        data = {"title": "Versioned Document"}
+        # Updated endpoint from "/documents/" to "/api/documents/"
+        create_resp = client.post("/api/documents/", data=data, files=files)
+    assert create_resp.status_code == 201
+    doc_id = create_resp.json()["id"]
+
+    # Update the document twice to generate versions
+    update_data1 = {"title": "Updated Title 1", "content": "Updated content 1"}
+    # Updated endpoint from "/documents/{doc_id}" to "/api/documents/{doc_id}"
+    resp1 = client.put(f"/api/documents/{doc_id}", json=update_data1)
+    assert resp1.status_code == 200
+
+    update_data2 = {"title": "Updated Title 2", "content": "Updated content 2"}
+    resp2 = client.put(f"/api/documents/{doc_id}", json=update_data2)
+    assert resp2.status_code == 200
+
+    # Retrieve all versions
+    versions_resp = client.get(f"/api/documents/{doc_id}/versions")
+    assert versions_resp.status_code == 200
+    versions = versions_resp.json()
+    # Expecting 2 versions
+    assert len(versions) == 2
+    assert versions[0]["version_number"] == 1
+    assert versions[1]["version_number"] == 2
+
+    # Retrieve the latest version
+    latest_resp = client.get(f"/api/documents/{doc_id}/versions/latest")
+    assert latest_resp.status_code == 200
+    latest = latest_resp.json()
+    assert latest["version_number"] == 2

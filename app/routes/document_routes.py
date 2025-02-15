@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 from typing import List, Optional
 import json
 
-from app.schemas.document import Document, DocumentCreate, DocumentUpdate, DocumentFile, DocumentResponse
+from app.schemas.document import Document, DocumentCreate, DocumentUpdate, DocumentFile, DocumentResponse, DocumentVersionResponse
 from app.services.document_service import DocumentService
 from app.logging_config import get_logger
 
@@ -263,3 +263,27 @@ def delete_document(
     except Exception as e:
         logger.error(f"Error deleting document {document_id}: {str(e)}")
         raise
+
+@router.get("/{document_id}/versions",
+    response_model=List[DocumentVersionResponse],
+    summary="Get document version history",
+    description="Retrieves all versions (history) of a document"
+)
+def get_document_versions(
+    document_id: int,
+    document_service: DocumentService = Depends(DocumentService)
+):
+    versions = document_service.get_document_versions(document_id)
+    return versions
+
+@router.get("/{document_id}/versions/latest",
+    response_model=DocumentVersionResponse,
+    summary="Get latest document version",
+    description="Retrieves just the latest archived version of a document"
+)
+def get_latest_document_version(
+    document_id: int,
+    document_service: DocumentService = Depends(DocumentService)
+):
+    latest_version = document_service.get_latest_document_version(document_id)
+    return latest_version

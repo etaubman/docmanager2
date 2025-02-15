@@ -38,3 +38,16 @@ class Document(DocumentBase):
 
 class DocumentResponse(Document):
     pass
+
+# New schema for document version
+class DocumentVersionResponse(BaseModel):
+    id: int
+    document_id: int
+    version_number: int
+    title: str
+    content: str
+    file_name: str | None = None
+    file_path: str | None = None
+    file_size: int | None = None
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)

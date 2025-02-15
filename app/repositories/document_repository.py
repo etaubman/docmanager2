@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.document import Document
 from app.schemas.document import DocumentCreate, DocumentUpdate
 from app.logging_config import get_logger
+from app.models.document_version import DocumentVersion
 
 logger = get_logger(__name__)
 
@@ -73,6 +74,19 @@ class DocumentRepository:
         try:
             db_document = DocumentRepository.get_by_id(db, document_id)
             if db_document:
+                # Archive current version
+                version_number = len(db_document.versions) + 1 if db_document.versions else 1
+                version = DocumentVersion(
+                    document_id=db_document.id,
+                    version_number=version_number,
+                    title=db_document.title,
+                    content=db_document.content,
+                    file_name=db_document.file_name,
+                    file_path=db_document.file_path,
+                    file_size=db_document.file_size
+                )
+                db.add(version)
+                # Update document
                 for key, value in document.model_dump().items():
                     setattr(db_document, key, value)
                 db.commit()
@@ -101,3 +115,13 @@ class DocumentRepository:
             logger.error(f"Database error while deleting document {document_id}: {str(e)}")
             db.rollback()
             raise
+
+    @staticmethod
+    def get_versions(db: Session, document_id: int) -> list:
+        """Retrieve all versions of a document by its ID"""
+        return db.query(DocumentVersion).filter(DocumentVersion.document_id == document_id).order_by(DocumentVersion.version_number.asc()).all()
+
+    @staticmethod
+    def get_latest_version(db: Session, document_id: int):
+        """Retrieve the latest version of a document by its ID"""
+        return db.query(DocumentVersion).filter(DocumentVersion.document_id == document_id).order_by(DocumentVersion.version_number.desc()).first()

@@ -8,6 +8,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.models.document_version import DocumentVersion  # new import
 
 class Document(Base):
     """
@@ -40,3 +41,4 @@ class Document(Base):
     
     # Relationships
     document_type = relationship("DocumentType", back_populates="documents")
+    versions = relationship("DocumentVersion", back_populates="document", order_by="DocumentVersion.version_number", cascade="all, delete-orphan")
