@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Manager</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Document Manager</h1>
+        
+        <!-- Document Form -->
+        <div class="form-container">
+            <h2>Create/Edit Document</h2>
+            <form id="documentForm">
+                <input type="hidden" id="documentId">
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="content">Content:</label>
+                    <textarea id="content" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="file">File (optional):</label>
+                    <input type="file" id="file">
+                </div>
+                <button type="submit" id="submitBtn">Create Document</button>
+                <button type="button" id="clearBtn">Clear Form</button>
+            </form>
+        </div>
+
+        <!-- Documents List -->
+        <div class="documents-container">
+            <h2>Documents</h2>
+            <div id="documentsList"></div>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
