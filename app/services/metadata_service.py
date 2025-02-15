@@ -10,7 +10,11 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 from app.repositories.metadata_repository import MetadataRepository, DocumentTypeRepository
 from app.models.metadata import MetadataField, DocumentType, MetadataType
-from app.schemas.metadata import MetadataFieldCreate, DocumentTypeCreate
+from app.schemas.metadata import (
+    MetadataFieldCreate, 
+    DocumentTypeCreate,
+    MetadataAssociationUpdate
+)
 from app.database import get_db
 import json
 
@@ -134,3 +138,22 @@ class MetadataService:
 
     def get_all_document_types(self) -> List[DocumentType]:
         return self.document_type_repo.get_all_document_types()
+
+    def update_document_type_fields(self, type_id: int, fields_update: MetadataAssociationUpdate) -> DocumentType:
+        """Update the metadata fields associated with a document type"""
+        doc_type = self.document_type_repo.get_document_type(type_id)
+        if not doc_type:
+            raise ValueError(f"Document type with id {type_id} not found")
+
+        # Clear existing associations
+        self.document_type_repo.clear_metadata_fields(type_id)
+
+        # Add new associations
+        for assoc in fields_update.field_associations:
+            self.document_type_repo.associate_metadata_field(
+                type_id,
+                assoc.metadata_field_id,
+                assoc.is_required
+            )
+
+        return self.get_document_type(type_id)

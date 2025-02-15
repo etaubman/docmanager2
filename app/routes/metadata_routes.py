@@ -10,7 +10,8 @@ from typing import List
 from app.database import get_db
 from app.schemas.metadata import (
     MetadataField, MetadataFieldCreate,
-    DocumentType, DocumentTypeCreate
+    DocumentType, DocumentTypeCreate,
+    MetadataAssociationUpdate
 )
 from app.services.metadata_service import MetadataService, MetadataValidationError
 
@@ -65,3 +66,16 @@ def get_document_type(type_id: int, db: Session = Depends(get_db)):
     if not doc_type:
         raise HTTPException(status_code=404, detail="Document type not found")
     return doc_type
+
+@router.put("/document-types/{type_id}/fields", response_model=DocumentType)
+def update_document_type_fields(
+    type_id: int,
+    fields_update: MetadataAssociationUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update metadata fields associated with a document type"""
+    service = MetadataService(db)
+    try:
+        return service.update_document_type_fields(type_id, fields_update)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

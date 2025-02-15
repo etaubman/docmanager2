@@ -56,3 +56,10 @@ class DocumentType(DocumentTypeBase):
 class DocumentMetadata(BaseModel):
     document_type_id: Optional[int] = None
     metadata_values: Dict[str, Any] = Field(default_factory=dict)
+
+class MetadataAssociationUpdate(BaseModel):
+    """Schema for updating metadata field associations"""
+    field_associations: List[DocumentTypeMetadataAssociation]
+    
+    class Config:
+        from_attributes = True

@@ -6,7 +6,7 @@ Purpose: Database operations for metadata fields and document types
 
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, delete
 from app.models.metadata import MetadataField, DocumentType, document_type_metadata
 
 class MetadataRepository:
@@ -96,6 +96,14 @@ class DocumentTypeRepository:
                 document_type_metadata.c.document_type_id == type_id,
                 document_type_metadata.c.metadata_field_id == field_id
             )
+        )
+        self.db.execute(stmt)
+        self.db.commit()
+
+    def clear_metadata_fields(self, type_id: int):
+        """Remove all metadata field associations for a document type"""
+        stmt = delete(document_type_metadata).where(
+            document_type_metadata.c.document_type_id == type_id
         )
         self.db.execute(stmt)
         self.db.commit()

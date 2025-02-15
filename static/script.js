@@ -329,8 +329,13 @@ async function handleMetadataSubmit(e) {
 // Document Types Management
 async function loadDocumentTypes() {
     try {
-        const response = await fetch(ENDPOINTS.documentTypes);
-        const types = await response.json();
+        const [typesResponse, fieldsResponse] = await Promise.all([
+            fetch(ENDPOINTS.documentTypes),
+            fetch(ENDPOINTS.metadataFields)
+        ]);
+        const types = await typesResponse.json();
+        const fields = await fieldsResponse.json();
+        
         const typesList = document.getElementById('doctypesList');
         typesList.innerHTML = types.map(type => `
             <div class="document-type">
@@ -342,6 +347,9 @@ async function loadDocumentTypes() {
                         <li>${field.name} (${field.field_type})</li>
                     `).join('')}
                 </ul>
+                <button onclick="editDocumentTypeFields(${type.id}, ${JSON.stringify(fields)})" class="edit-btn">
+                    Edit Fields
+                </button>
             </div>
         `).join('');
     } catch (error) {
@@ -388,6 +396,69 @@ async function handleDoctypeSubmit(e) {
     } catch (error) {
         console.error('Error creating document type:', error);
     }
+}
+
+async function editDocumentTypeFields(typeId, allFields) {
+    const type = await (await fetch(`${ENDPOINTS.documentTypes}/${typeId}`)).json();
+    const currentFields = type.metadata_fields.map(f => f.id);
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>Edit Metadata Fields</h3>
+            <form id="editFieldsForm">
+                ${allFields.map(field => `
+                    <div class="field-selection">
+                        <label>
+                            <input type="checkbox" 
+                                name="field_${field.id}" 
+                                value="${field.id}"
+                                ${currentFields.includes(field.id) ? 'checked' : ''}>
+                            ${field.name} (${field.field_type})
+                        </label>
+                        <label class="required-checkbox">
+                            <input type="checkbox" 
+                                name="required_${field.id}"
+                                ${type.metadata_fields.find(f => f.id === field.id)?.is_required ? 'checked' : ''}>
+                            Required
+                        </label>
+                    </div>
+                `).join('')}
+                <div class="modal-actions">
+                    <button type="submit">Save</button>
+                    <button type="button" onclick="this.closest('.modal').remove()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const form = modal.querySelector('form');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fieldAssociations = allFields
+            .filter(field => form.querySelector(`[name="field_${field.id}"]`).checked)
+            .map(field => ({
+                metadata_field_id: field.id,
+                is_required: form.querySelector(`[name="required_${field.id}"]`).checked
+            }));
+            
+        try {
+            await fetch(`${ENDPOINTS.documentTypes}/${typeId}/fields`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field_associations: fieldAssociations })
+            });
+            
+            modal.remove();
+            loadDocumentTypes();
+        } catch (error) {
+            console.error('Error updating fields:', error);
+        }
+    });
 }
 
 // Document Upload with Metadata

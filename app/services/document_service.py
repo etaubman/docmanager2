@@ -12,7 +12,7 @@ import uuid
 from app.models.document import Document
 from app.schemas.document import DocumentCreate, DocumentUpdate, DocumentFile
 from app.repositories.document_repository import DocumentRepository
-from app.services.metadata_service import MetadataService
+from app.services.metadata_service import MetadataService, MetadataValidationError
 from app.storage.storage_interface import StorageInterface
 from app.storage.dependencies import get_storage
 from app.database import get_db
@@ -148,10 +148,10 @@ class DocumentService:
         logger.info(f"Successfully updated document with ID: {document_id}")
         return updated_document
 
-    def delete_document(self, db: Session, document_id: int) -> None:
+    def delete_document(self, document_id: int) -> None:
         """Delete a specific document"""
         logger.info(f"Attempting to delete document with ID: {document_id}")
-        if not self.document_repo.delete(db, document_id):
+        if not self.document_repo.delete(self.db, document_id):
             logger.warning(f"Document with ID {document_id} not found for deletion")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
