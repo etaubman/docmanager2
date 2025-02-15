@@ -5,7 +5,7 @@ Purpose: Request/response validation for metadata and document type operations
 """
 
 from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 from datetime import datetime
 
@@ -30,9 +30,7 @@ class MetadataFieldCreate(MetadataFieldBase):
 
 class MetadataField(MetadataFieldBase):
     id: int
-    
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DocumentTypeMetadataAssociation(BaseModel):
     metadata_field_id: int
@@ -48,9 +46,7 @@ class DocumentTypeCreate(DocumentTypeBase):
 class DocumentType(DocumentTypeBase):
     id: int
     metadata_fields: List[MetadataField]
-    
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Update document schemas to include metadata
 class DocumentMetadata(BaseModel):
@@ -60,6 +56,4 @@ class DocumentMetadata(BaseModel):
 class MetadataAssociationUpdate(BaseModel):
     """Schema for updating metadata field associations"""
     field_associations: List[DocumentTypeMetadataAssociation]
-    
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -5,3 +5,7 @@ python-multipart>=0.0.6
 aiofiles>=23.1.0
 pydantic>=2.0.0
 typing-extensions>=4.5.0  # For modern typing features
+pytest>=7.4.0
+httpx>=0.24.0  # Required for FastAPI TestClient
+pytest-asyncio>=0.21.0  # For testing async functions
+pytest-cov>=4.1.0  # For test coverage reports

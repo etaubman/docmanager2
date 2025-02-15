@@ -5,7 +5,7 @@ Purpose: Defines the data structure for API request/response handling
 """
 
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from fastapi import UploadFile
 
 class DocumentBase(BaseModel):
@@ -34,10 +34,7 @@ class Document(DocumentBase):
     file_size: int | None = None
     created_at: datetime
     updated_at: datetime | None = None
-
-    class Config:
-        """Configure Pydantic to handle SQLAlchemy models"""
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DocumentResponse(Document):
     pass

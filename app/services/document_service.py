@@ -135,10 +135,10 @@ class DocumentService:
             )
         return document
 
-    def update_document(self, db: Session, document_id: int, document: DocumentUpdate) -> Document:
+    def update_document(self, document_id: int, document: DocumentUpdate) -> Document:
         """Update a specific document"""
         logger.info(f"Updating document with ID: {document_id}")
-        updated_document = self.document_repo.update(db, document_id, document)
+        updated_document = self.document_repo.update(self.db, document_id, document)
         if not updated_document:
             logger.warning(f"Document with ID {document_id} not found for update")
             raise HTTPException(

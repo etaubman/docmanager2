@@ -103,7 +103,7 @@ class MetadataService:
         if self.metadata_repo.get_metadata_field_by_name(field_data.name):
             raise ValueError(f"Metadata field with name {field_data.name} already exists")
         
-        field = MetadataField(**field_data.dict())
+        field = MetadataField(**field_data.model_dump())
         return self.metadata_repo.create_metadata_field(field)
 
     def get_metadata_field(self, field_id: int) -> Optional[MetadataField]:
