@@ -15,6 +15,7 @@ class DocumentRepository:
     """Repository class for document-related database operations"""
 
     def __init__(self, db: Session):
+        """Initialize the repository with a database session"""
         self.db = db
 
     @staticmethod

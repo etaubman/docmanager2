@@ -15,8 +15,6 @@ from app.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-
-
 router = APIRouter(
     prefix="/documents",
     tags=["Documents"],
@@ -43,6 +41,8 @@ async def create_document(
     - **title**: Required title of the document
     - **document_type_id**: Optional ID of the document type
     - **metadata_values**: Optional JSON string containing metadata key-value pairs
+    
+    Returns the created DocumentResponse object.
     """
     logger.info(f"Received request to create document: {title}")
     try:
@@ -78,6 +78,8 @@ async def update_document_metadata(
     - **document_id**: Required ID of the document to update
     - **document_type_id**: Optional ID of the document type
     - **metadata_values**: Required JSON string containing metadata key-value pairs
+    
+    Returns the updated DocumentResponse object.
     """
     logger.info(f"Received request to update metadata for document ID: {document_id}")
     try:
@@ -111,6 +113,8 @@ async def upload_document(
     
     - **file**: Required file to upload
     - **document**: JSON string containing title and content
+    
+    Returns the created Document object.
     """
     logger.info(f"Received document upload request with file: {file.filename}")
     try:
@@ -134,6 +138,8 @@ async def download_document_file(
     Download a document's file:
     
     - **document_id**: Required ID of the document
+    
+    Returns a StreamingResponse to download the file.
     """
     logger.info(f"Received download request for document ID: {document_id}")
     try:
@@ -169,6 +175,8 @@ def get_documents(
     
     - **skip**: Number of documents to skip (default: 0)
     - **limit**: Maximum number of documents to return (default: 100)
+    
+    Returns a list of Document objects.
     """
     logger.info(f"Received request to list documents (skip={skip}, limit={limit})")
     try:
@@ -192,6 +200,8 @@ def get_document(
     Retrieve a specific document by its ID:
     
     - **document_id**: Required ID of the document to retrieve
+    
+    Returns the Document object if found, otherwise raises a 404 HTTPException.
     """
     logger.info(f"Received request to get document ID: {document_id}")
     try:
@@ -218,6 +228,8 @@ def update_document(
     - **document_id**: Required ID of the document to update
     - **title**: New title of the document
     - **content**: New content of the document
+    
+    Returns the updated Document object.
     """
     logger.info(f"Received request to update document ID: {document_id}")
     try:
@@ -241,6 +253,8 @@ def delete_document(
     Delete a document by its ID:
     
     - **document_id**: Required ID of the document to delete
+    
+    Returns a 204 No Content status on successful deletion.
     """
     logger.info(f"Received request to delete document ID: {document_id}")
     try:
