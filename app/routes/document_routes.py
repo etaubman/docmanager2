@@ -4,7 +4,7 @@ Description: API routes for document management
 Purpose: Defines all HTTP endpoints for document operations with OpenAPI documentation
 """
 
-from fastapi import APIRouter, Depends, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
@@ -14,6 +14,9 @@ from app.database import get_db
 from app.schemas.document import Document, DocumentCreate, DocumentUpdate, DocumentFile
 from app.services.document_service import DocumentService
 from app.storage.implementations.local_storage import LocalFileStorage
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix="/documents",
@@ -40,7 +43,14 @@ def create_document(
     - **title**: Required title of the document
     - **content**: Required content of the document
     """
-    return document_service.create_document(db, document)
+    logger.info(f"Received request to create document: {document.title}")
+    try:
+        result = document_service.create_document(db, document)
+        logger.info(f"Successfully processed create document request for ID: {result.id}")
+        return result
+    except Exception as e:
+        logger.error(f"Error processing create document request: {str(e)}")
+        raise
 
 @router.post("/upload",
     response_model=Document,
@@ -59,8 +69,15 @@ async def upload_document(
     - **file**: Required file to upload
     - **document**: JSON string containing title and content
     """
-    doc_data = json.loads(document)
-    return await document_service.create_document_with_file(db, DocumentFile(**doc_data), file, storage)
+    logger.info(f"Received document upload request with file: {file.filename}")
+    try:
+        doc_data = json.loads(document)
+        result = await document_service.create_document_with_file(db, DocumentFile(**doc_data), file, storage)
+        logger.info(f"Successfully processed document upload for ID: {result.id}")
+        return result
+    except Exception as e:
+        logger.error(f"Error processing document upload: {str(e)}")
+        raise
 
 @router.get("/download/{document_id}",
     summary="Download document file",
@@ -75,15 +92,22 @@ async def download_document_file(
     
     - **document_id**: Required ID of the document
     """
-    doc = document_service.get_document(db, document_id)
-    if not doc.file_path:
-        raise HTTPException(status_code=404, detail="No file associated with this document")
-    
-    return StreamingResponse(
-        storage.get_file(doc.file_path),
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{doc.file_name}"'}
-    )
+    logger.info(f"Received download request for document ID: {document_id}")
+    try:
+        doc = document_service.get_document(db, document_id)
+        if not doc.file_path:
+            logger.warning(f"No file associated with document ID: {document_id}")
+            raise HTTPException(status_code=404, detail="No file associated with this document")
+        
+        logger.info(f"Streaming file for document ID: {document_id}")
+        return StreamingResponse(
+            storage.get_file(doc.file_path),
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{doc.file_name}"'}
+        )
+    except Exception as e:
+        logger.error(f"Error processing download request for document {document_id}: {str(e)}")
+        raise
 
 @router.get("/", 
     response_model=List[Document],
@@ -101,7 +125,14 @@ def get_documents(
     - **skip**: Number of documents to skip (default: 0)
     - **limit**: Maximum number of documents to return (default: 100)
     """
-    return document_service.get_documents(db, skip, limit)
+    logger.info(f"Received request to list documents (skip={skip}, limit={limit})")
+    try:
+        result = document_service.get_documents(db, skip, limit)
+        logger.info(f"Successfully retrieved {len(result)} documents")
+        return result
+    except Exception as e:
+        logger.error(f"Error retrieving documents list: {str(e)}")
+        raise
 
 @router.get("/{document_id}",
     response_model=Document,
@@ -117,7 +148,14 @@ def get_document(
     
     - **document_id**: Required ID of the document to retrieve
     """
-    return document_service.get_document(db, document_id)
+    logger.info(f"Received request to get document ID: {document_id}")
+    try:
+        result = document_service.get_document(db, document_id)
+        logger.info(f"Successfully retrieved document ID: {document_id}")
+        return result
+    except Exception as e:
+        logger.error(f"Error retrieving document {document_id}: {str(e)}")
+        raise
 
 @router.put("/{document_id}",
     response_model=Document,
@@ -136,7 +174,14 @@ def update_document(
     - **title**: New title of the document
     - **content**: New content of the document
     """
-    return document_service.update_document(db, document_id, document)
+    logger.info(f"Received request to update document ID: {document_id}")
+    try:
+        result = document_service.update_document(db, document_id, document)
+        logger.info(f"Successfully updated document ID: {document_id}")
+        return result
+    except Exception as e:
+        logger.error(f"Error updating document {document_id}: {str(e)}")
+        raise
 
 @router.delete("/{document_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -152,4 +197,10 @@ def delete_document(
     
     - **document_id**: Required ID of the document to delete
     """
-    document_service.delete_document(db, document_id)
+    logger.info(f"Received request to delete document ID: {document_id}")
+    try:
+        document_service.delete_document(db, document_id)
+        logger.info(f"Successfully deleted document ID: {document_id}")
+    except Exception as e:
+        logger.error(f"Error deleting document {document_id}: {str(e)}")
+        raise

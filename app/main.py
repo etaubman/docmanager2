@@ -9,6 +9,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routes import document_routes
+from app.logging_config import setup_logging
+
+# Initialize logging
+setup_logging()
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
