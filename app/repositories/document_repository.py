@@ -14,6 +14,9 @@ logger = get_logger(__name__)
 class DocumentRepository:
     """Repository class for document-related database operations"""
 
+    def __init__(self, db: Session):
+        self.db = db
+
     @staticmethod
     def create(db: Session, document: DocumentCreate) -> Document:
         """Create a new document in the database"""
@@ -36,8 +39,7 @@ class DocumentRepository:
             db.rollback()
             raise
 
-    @staticmethod
-    def get_all(db: Session, skip: int = 0, limit: int = 100) -> list[Document]:
+    def get_all(self, db: Session, skip: int = 0, limit: int = 100) -> list[Document]:
         """Retrieve all documents with pagination"""
         logger.debug(f"Retrieving documents from database with skip={skip}, limit={limit}")
         try:

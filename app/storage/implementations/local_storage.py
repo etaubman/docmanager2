@@ -51,8 +51,8 @@ class LocalFileStorage(StorageInterface):
         file_path = os.path.join(self.base_path, filename)
         logger.info(f"Saving file: {filename} to path: {file_path}")
         try:
+            content = await file.read()  # Await the read operation
             async with aiofiles.open(file_path, 'wb') as f:
-                content = file.read()
                 await f.write(content)
             logger.info(f"Successfully saved file: {filename}")
             return file_path

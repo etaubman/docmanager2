@@ -10,32 +10,66 @@
     <div class="container">
         <h1>Document Manager</h1>
         
-        <!-- Document Form -->
-        <div class="form-container">
-            <h2>Create/Edit Document</h2>
-            <form id="documentForm">
-                <input type="hidden" id="documentId">
-                <div class="form-group">
-                    <label for="title">Title:</label>
-                    <input type="text" id="title" required>
-                </div>
-                <div class="form-group">
-                    <label for="content">Content:</label>
-                    <textarea id="content" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="file">File (optional):</label>
-                    <input type="file" id="file">
-                </div>
-                <button type="submit" id="submitBtn">Create Document</button>
-                <button type="button" id="clearBtn">Clear Form</button>
-            </form>
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="documents">Documents</button>
+            <button class="tab-btn" data-tab="metadata">Metadata Fields</button>
+            <button class="tab-btn" data-tab="doctypes">Document Types</button>
         </div>
 
-        <!-- Documents List -->
-        <div class="documents-container">
-            <h2>Documents</h2>
+        <!-- Documents Tab -->
+        <div id="documents" class="tab-content active">
+            <h2>Upload Document</h2>
+            <form id="uploadForm">
+                <input type="file" id="file" required>
+                <input type="text" id="title" placeholder="Document Title" required>
+                <select id="documentType">
+                    <option value="">Select Document Type</option>
+                </select>
+                <div id="metadataFields"></div>
+                <button type="submit">Upload</button>
+            </form>
+
+            <h2>Documents List</h2>
             <div id="documentsList"></div>
+        </div>
+
+        <!-- Metadata Fields Tab -->
+        <div id="metadata" class="tab-content">
+            <h2>Metadata Fields</h2>
+            <form id="metadataForm">
+                <input type="text" id="fieldName" placeholder="Field Name" required>
+                <input type="text" id="fieldDescription" placeholder="Description">
+                <select id="fieldType" required>
+                    <option value="text">Text</option>
+                    <option value="integer">Integer</option>
+                    <option value="date">Date</option>
+                    <option value="enum">Enum</option>
+                    <option value="boolean">Boolean</option>
+                </select>
+                <input type="text" id="enumValues" placeholder="Enum values (comma-separated)">
+                <label>
+                    <input type="checkbox" id="isMultiValued">
+                    Allow Multiple Values
+                </label>
+                <button type="submit">Create Field</button>
+            </form>
+
+            <h3>Existing Fields</h3>
+            <div id="metadataFieldsList"></div>
+        </div>
+
+        <!-- Document Types Tab -->
+        <div id="doctypes" class="tab-content">
+            <h2>Document Types</h2>
+            <form id="doctypeForm">
+                <input type="text" id="typeName" placeholder="Type Name" required>
+                <input type="text" id="typeDescription" placeholder="Description">
+                <div id="fieldSelection"></div>
+                <button type="submit">Create Document Type</button>
+            </form>
+
+            <h3>Existing Document Types</h3>
+            <div id="doctypesList"></div>
         </div>
     </div>
     <script src="/static/script.js"></script>

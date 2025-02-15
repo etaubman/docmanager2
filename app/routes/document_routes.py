@@ -6,17 +6,16 @@ Purpose: Defines all HTTP endpoints for document operations with OpenAPI documen
 
 from fastapi import APIRouter, Depends, status, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import json
 
-from app.database import get_db
-from app.schemas.document import Document, DocumentCreate, DocumentUpdate, DocumentFile
+from app.schemas.document import Document, DocumentCreate, DocumentUpdate, DocumentFile, DocumentResponse
 from app.services.document_service import DocumentService
-from app.storage.implementations.local_storage import LocalFileStorage
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
+
+
 
 router = APIRouter(
     prefix="/documents",
@@ -24,33 +23,77 @@ router = APIRouter(
     responses={404: {"description": "Document not found"}}
 )
 
-document_service = DocumentService()
-storage = LocalFileStorage()
-
-@router.post("/", 
-    response_model=Document,
+@router.post("/",
+    response_model=DocumentResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new document",
     description="Creates a new document with the provided title and content"
 )
-def create_document(
-    document: DocumentCreate,
-    db: Session = Depends(get_db)
+async def create_document(
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    document_type_id: Optional[int] = Form(None),
+    metadata_values: Optional[str] = Form(None),
+    document_service: DocumentService = Depends(DocumentService)
 ):
     """
     Create a new document with the following information:
     
+    - **file**: Required file to upload
     - **title**: Required title of the document
-    - **content**: Required content of the document
+    - **document_type_id**: Optional ID of the document type
+    - **metadata_values**: Optional JSON string containing metadata key-value pairs
     """
-    logger.info(f"Received request to create document: {document.title}")
+    logger.info(f"Received request to create document: {title}")
     try:
-        result = document_service.create_document(db, document)
+        metadata_dict = json.loads(metadata_values) if metadata_values else {}
+        result = await document_service.create_document(
+            file=file,
+            title=title,
+            document_type_id=document_type_id,
+            metadata_values=metadata_dict
+        )
         logger.info(f"Successfully processed create document request for ID: {result.id}")
         return result
-    except Exception as e:
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid metadata JSON format")
+    except ValueError as e:
         logger.error(f"Error processing create document request: {str(e)}")
-        raise
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.patch("/{document_id}/metadata",
+    response_model=DocumentResponse,
+    summary="Update document metadata",
+    description="Updates the metadata of an existing document"
+)
+async def update_document_metadata(
+    document_id: int,
+    document_type_id: Optional[int] = Form(None),
+    metadata_values: str = Form(...),
+    document_service: DocumentService = Depends(DocumentService)
+):
+    """
+    Update a document's metadata with the following information:
+    
+    - **document_id**: Required ID of the document to update
+    - **document_type_id**: Optional ID of the document type
+    - **metadata_values**: Required JSON string containing metadata key-value pairs
+    """
+    logger.info(f"Received request to update metadata for document ID: {document_id}")
+    try:
+        metadata_dict = json.loads(metadata_values)
+        result = document_service.update_document_metadata(
+            document_id=document_id,
+            document_type_id=document_type_id,
+            metadata_values=metadata_dict
+        )
+        logger.info(f"Successfully updated metadata for document ID: {document_id}")
+        return result
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid metadata JSON format")
+    except ValueError as e:
+        logger.error(f"Error updating metadata for document {document_id}: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/upload",
     response_model=Document,
@@ -61,7 +104,7 @@ def create_document(
 async def upload_document(
     file: UploadFile = File(...),
     document: str = Form(...),
-    db: Session = Depends(get_db)
+    document_service: DocumentService = Depends(DocumentService)
 ):
     """
     Upload a document with a file:
@@ -72,7 +115,7 @@ async def upload_document(
     logger.info(f"Received document upload request with file: {file.filename}")
     try:
         doc_data = json.loads(document)
-        result = await document_service.create_document_with_file(db, DocumentFile(**doc_data), file, storage)
+        result = await document_service.create_document_with_file(DocumentFile(**doc_data), file)
         logger.info(f"Successfully processed document upload for ID: {result.id}")
         return result
     except Exception as e:
@@ -85,7 +128,7 @@ async def upload_document(
 )
 async def download_document_file(
     document_id: int,
-    db: Session = Depends(get_db)
+    document_service: DocumentService = Depends(DocumentService)
 ):
     """
     Download a document's file:
@@ -94,14 +137,16 @@ async def download_document_file(
     """
     logger.info(f"Received download request for document ID: {document_id}")
     try:
-        doc = document_service.get_document(db, document_id)
+        doc = document_service.get_document(document_id)
         if not doc.file_path:
             logger.warning(f"No file associated with document ID: {document_id}")
             raise HTTPException(status_code=404, detail="No file associated with this document")
         
         logger.info(f"Streaming file for document ID: {document_id}")
+        # Don't await the generator, pass it directly to StreamingResponse
+        file_generator = document_service.get_file(doc.file_path)
         return StreamingResponse(
-            storage.get_file(doc.file_path),
+            file_generator,
             media_type="application/octet-stream",
             headers={"Content-Disposition": f'attachment; filename="{doc.file_name}"'}
         )
@@ -117,7 +162,7 @@ async def download_document_file(
 def get_documents(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    document_service: DocumentService = Depends(DocumentService)
 ):
     """
     Retrieve all documents with pagination:
@@ -127,7 +172,7 @@ def get_documents(
     """
     logger.info(f"Received request to list documents (skip={skip}, limit={limit})")
     try:
-        result = document_service.get_documents(db, skip, limit)
+        result = document_service.get_documents(skip=skip, limit=limit)
         logger.info(f"Successfully retrieved {len(result)} documents")
         return result
     except Exception as e:
@@ -141,7 +186,7 @@ def get_documents(
 )
 def get_document(
     document_id: int,
-    db: Session = Depends(get_db)
+    document_service: DocumentService = Depends(DocumentService)
 ):
     """
     Retrieve a specific document by its ID:
@@ -150,7 +195,7 @@ def get_document(
     """
     logger.info(f"Received request to get document ID: {document_id}")
     try:
-        result = document_service.get_document(db, document_id)
+        result = document_service.get_document(document_id)
         logger.info(f"Successfully retrieved document ID: {document_id}")
         return result
     except Exception as e:
@@ -165,7 +210,7 @@ def get_document(
 def update_document(
     document_id: int,
     document: DocumentUpdate,
-    db: Session = Depends(get_db)
+    document_service: DocumentService = Depends(DocumentService)
 ):
     """
     Update a document with the following information:
@@ -176,7 +221,7 @@ def update_document(
     """
     logger.info(f"Received request to update document ID: {document_id}")
     try:
-        result = document_service.update_document(db, document_id, document)
+        result = document_service.update_document(document_id, document)
         logger.info(f"Successfully updated document ID: {document_id}")
         return result
     except Exception as e:
@@ -190,7 +235,7 @@ def update_document(
 )
 def delete_document(
     document_id: int,
-    db: Session = Depends(get_db)
+    document_service: DocumentService = Depends(DocumentService)
 ):
     """
     Delete a document by its ID:
@@ -199,7 +244,7 @@ def delete_document(
     """
     logger.info(f"Received request to delete document ID: {document_id}")
     try:
-        document_service.delete_document(db, document_id)
+        document_service.delete_document(document_id)
         logger.info(f"Successfully deleted document ID: {document_id}")
     except Exception as e:
         logger.error(f"Error deleting document {document_id}: {str(e)}")

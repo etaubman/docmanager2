@@ -38,3 +38,6 @@ class Document(DocumentBase):
     class Config:
         """Configure Pydantic to handle SQLAlchemy models"""
         from_attributes = True
+
+class DocumentResponse(Document):
+    pass

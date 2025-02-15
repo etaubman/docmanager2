@@ -4,8 +4,9 @@ Description: Document model definition using SQLAlchemy ORM
 Purpose: Defines the database schema for documents
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 class Document(Base):
@@ -21,6 +22,8 @@ class Document(Base):
         file_size (int): Size of the file in bytes
         created_at (datetime): Document creation timestamp
         updated_at (datetime): Document last update timestamp
+        document_type_id (int): Foreign key to document type
+        metadata_values (dict): Metadata values in JSON format
     """
     __tablename__ = "documents"
 
@@ -32,3 +35,8 @@ class Document(Base):
     file_size = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    document_type_id = Column(Integer, ForeignKey('document_types.id'), nullable=True)
+    metadata_values = Column(JSON, default=dict)
+    
+    # Relationships
+    document_type = relationship("DocumentType", back_populates="documents")
