@@ -1,6 +1,7 @@
 """
 Database seeder for populating the database with realistic test data.
 """
+import os
 import random
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict
@@ -10,9 +11,70 @@ from app.models.metadata import MetadataField, DocumentType, MetadataType
 from app.models.document import Document
 from app.models.document_version import DocumentVersion
 from app.models.category import Category
-from app.database import SessionLocal
+from app.database import SessionLocal, Base, engine
 
 fake = faker.Faker()
+
+def create_document_file(file_path: str, is_markdown: bool = False) -> int:
+    """Create a physical document file and return its size"""
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    
+    content = []
+    if is_markdown:
+        content = [
+            f"# {fake.catch_phrase()}",
+            "",
+            f"## Overview",
+            fake.text(max_nb_chars=200),
+            "",
+            f"## Details",
+            fake.text(max_nb_chars=300),
+            "",
+            "### Key Points",
+            "- " + fake.sentence(),
+            "- " + fake.sentence(),
+            "- " + fake.sentence(),
+            "",
+            f"## Notes",
+            fake.text(max_nb_chars=200)
+        ]
+    else:
+        content = [
+            fake.catch_phrase(),
+            "",
+            fake.text(max_nb_chars=800)
+        ]
+    
+    content = "\n".join(content)
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    
+    return len(content.encode('utf-8'))
+
+def cleanup_uploads():
+    """Clean up all files in the uploads directory"""
+    uploads_dir = "uploads"
+    if os.path.exists(uploads_dir):
+        for filename in os.listdir(uploads_dir):
+            file_path = os.path.join(uploads_dir, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print(f"Error deleting {file_path}: {e}")
+
+def truncate_database(db: Session):
+    """Truncate all tables in the database"""
+    try:
+        # Drop all tables
+        Base.metadata.drop_all(bind=engine)
+        # Recreate all tables
+        Base.metadata.create_all(bind=engine)
+        db.commit()
+    except Exception as e:
+        print(f"Error truncating database: {e}")
+        db.rollback()
+        raise
 
 def create_metadata_fields(db: Session) -> List[MetadataField]:
     """Create a variety of metadata fields"""
@@ -207,6 +269,8 @@ def create_sample_documents(db: Session, document_types: List[DocumentType], num
     try:
         for _ in range(num_documents):
             doc_type = random.choice(document_types)
+            is_markdown = random.choice([True, False])
+            file_ext = ".md" if is_markdown else ".txt"
             
             # Generate metadata based on document type
             metadata_values: Dict = {}
@@ -222,13 +286,19 @@ def create_sample_documents(db: Session, document_types: List[DocumentType], num
                 elif field.field_type == MetadataType.TEXT and field.is_multi_valued:
                     metadata_values[field.name] = random.sample(tags, random.randint(1, 3))
             
+            # Create main document file
+            file_id = fake.uuid4()
+            file_name = f"{file_id}{file_ext}"
+            file_path = os.path.join("uploads", file_name)
+            file_size = create_document_file(file_path, is_markdown)
+            
             # Create document
             doc = Document(
                 title=fake.catch_phrase(),
                 content=fake.text(max_nb_chars=1000),
-                file_name=f"{fake.uuid4()}.txt",
-                file_path=f"uploads/{fake.uuid4()}.txt",
-                file_size=random.randint(1000, 1000000),
+                file_name=file_name,
+                file_path=file_path,
+                file_size=file_size,
                 document_type_id=doc_type.id,
                 metadata_values=metadata_values
             )
@@ -237,14 +307,18 @@ def create_sample_documents(db: Session, document_types: List[DocumentType], num
             
             # Create 1-3 versions for each document
             for version_num in range(1, random.randint(2, 4)):
+                version_file_name = f"{file_id}_v{version_num}{file_ext}"
+                version_file_path = os.path.join("uploads", version_file_name)
+                version_file_size = create_document_file(version_file_path, is_markdown)
+                
                 version = DocumentVersion(
                     document_id=doc.id,
                     version_number=version_num,
                     title=doc.title,
                     content=fake.text(max_nb_chars=1000),
-                    file_name=f"{fake.uuid4()}_v{version_num}.txt",
-                    file_path=f"uploads/{fake.uuid4()}_v{version_num}.txt",
-                    file_size=random.randint(1000, 1000000)
+                    file_name=version_file_name,
+                    file_path=version_file_path,
+                    file_size=version_file_size
                 )
                 db.add(version)
         
@@ -260,6 +334,10 @@ def seed_database(num_documents: int = 50, db: Optional[Session] = None) -> Dict
     if not db:
         db = SessionLocal()
     try:
+        print("Cleaning up existing data...")
+        truncate_database(db)
+        cleanup_uploads()
+        
         # Create metadata fields
         print("Creating metadata fields...")
         metadata_fields = create_metadata_fields(db)
