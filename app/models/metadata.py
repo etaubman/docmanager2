@@ -34,6 +34,7 @@ class MetadataField(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, unique=True)
+    display_name = Column(String(255))  # New field for UI display
     description = Column(String(512))
     field_type = Column(SQLEnum(MetadataType), nullable=False)
     is_multi_valued = Column(Boolean, default=False)

@@ -86,6 +86,7 @@ def create_metadata_fields(db: Session) -> List[MetadataField]:
     fields = [
         MetadataField(
             name="department",
+            display_name="Department",
             description="Department that owns the document",
             field_type=MetadataType.ENUM,
             enum_values="HR,Finance,Legal,Engineering,Marketing",
@@ -93,24 +94,28 @@ def create_metadata_fields(db: Session) -> List[MetadataField]:
         ),
         MetadataField(
             name="document_date",
+            display_name="Document Date",
             description="Date of document creation",
             field_type=MetadataType.DATE,
             validation_rules='{"required": true}'
         ),
         MetadataField(
             name="confidential",
+            display_name="Confidential",
             description="Whether the document is confidential",
             field_type=MetadataType.BOOLEAN,
             default_value="false"
         ),
         MetadataField(
             name="tags",
+            display_name="Tags",
             description="Document tags",
             field_type=MetadataType.TEXT,
             is_multi_valued=True
         ),
         MetadataField(
             name="revision_number",
+            display_name="Revision Number",
             description="Document revision number",
             field_type=MetadataType.INTEGER,
             default_value="1"

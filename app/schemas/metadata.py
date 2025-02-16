@@ -18,6 +18,7 @@ class MetadataType(str, Enum):
 
 class MetadataFieldBase(BaseModel):
     name: str
+    display_name: Optional[str] = None
     description: Optional[str] = None
     field_type: MetadataType
     is_multi_valued: bool = False

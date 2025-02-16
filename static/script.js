@@ -291,7 +291,7 @@ async function loadMetadataFields() {
         const fieldsList = document.getElementById('metadataFieldsList');
         fieldsList.innerHTML = fields.map(field => `
             <div class="metadata-field">
-                <h4>${field.name}</h4>
+                <h4>${field.display_name || field.name}</h4>
                 <p>Type: ${field.field_type}</p>
                 <p>${field.description || ''}</p>
                 ${field.enum_values ? `<p>Values: ${field.enum_values}</p>` : ''}
@@ -307,6 +307,7 @@ async function handleMetadataSubmit(e) {
     e.preventDefault();
     const formData = {
         name: document.getElementById('fieldName').value,
+        display_name: document.getElementById('fieldDisplayName').value || document.getElementById('fieldName').value,
         description: document.getElementById('fieldDescription').value,
         field_type: document.getElementById('fieldType').value,
         is_multi_valued: document.getElementById('isMultiValued').checked,
@@ -483,7 +484,7 @@ async function handleDocumentTypeChange() {
         
         metadataFields.innerHTML = docType.metadata_fields.map(field => `
             <div class="metadata-input">
-                <label>${field.name}${field.is_required ? ' *' : ''}</label>
+                <label>${field.display_name || field.name}${field.is_required ? ' *' : ''}</label>
                 ${getMetadataInputHtml(field)}
             </div>
         `).join('');
