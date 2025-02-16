@@ -166,6 +166,7 @@ async function handleSubmit(event) {
 
             clearForm();
             loadDocuments();
+            showNotification('Document saved successfully.');
         } catch (error) {
             console.error('Error saving document:', error);
             alert('Failed to save document');
@@ -211,6 +212,7 @@ async function handleSubmit(event) {
 
             clearForm();
             loadDocuments();
+            showNotification('Document saved successfully.');
         } catch (error) {
             console.error('Error saving document:', error);
             alert('Failed to save document');
@@ -320,9 +322,11 @@ async function handleMetadataSubmit(e) {
         if (response.ok) {
             document.getElementById('metadataForm').reset();
             loadMetadataFields();
+            showNotification('Metadata field created.');
         }
     } catch (error) {
         console.error('Error creating metadata field:', error);
+        showNotification('Failed to create metadata field.', 'error');
     }
 }
 
@@ -392,9 +396,11 @@ async function handleDoctypeSubmit(e) {
         if (response.ok) {
             document.getElementById('doctypeForm').reset();
             loadDocumentTypes();
+            showNotification('Document type created.');
         }
     } catch (error) {
         console.error('Error creating document type:', error);
+        showNotification('Failed to create document type.', 'error');
     }
 }
 
@@ -542,10 +548,28 @@ async function handleUploadSubmit(e) {
             document.getElementById('uploadForm').reset();
             document.getElementById('metadataFields').innerHTML = '';
             loadDocuments();
+            showNotification('Document uploaded successfully.');
         }
     } catch (error) {
         console.error('Error uploading document:', error);
+        showNotification('Failed to upload document.', 'error');
     }
+}
+
+// New: Show Notification function
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    // Optionally adjust color for error type
+    if (type === 'error') {
+        notification.style.backgroundColor = 'var(--danger-color)';
+    }
+    document.body.appendChild(notification);
+    setTimeout(() => {
+        notification.style.opacity = 0;
+        setTimeout(() => notification.remove(), 500);
+    }, 3000);
 }
 
 // Initial load
