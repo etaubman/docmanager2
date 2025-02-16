@@ -1,6 +1,6 @@
 # Document Manager
 
-A document management system with metadata support and version control.
+A document management system built with FastAPI.
 
 ## Installation
 
@@ -32,9 +32,40 @@ This will create:
 
 You can customize the number of sample documents by passing a parameter:
 ```bash
-# Create 100 sample documents instead of the default 50
 python -m app.database_seeder 100
 ```
+
+## Using the CLI
+
+The Document Manager includes a command-line interface for common operations:
+
+### Document Management
+```bash
+# List all documents
+docmanager documents list
+
+# Upload a new document
+docmanager documents upload path/to/file.txt
+
+# Upload with category
+docmanager documents upload path/to/file.txt -c "Important Documents"
+
+# Delete a document
+docmanager documents delete document-id
+```
+
+### Category Management
+```bash
+# List all categories
+docmanager categories list
+
+# Create a new category
+docmanager categories create "Important Documents"
+```
+
+## API Usage
+
+See the API documentation at `/api/docs` when running the server.
 
 ## Running Tests
 
@@ -43,4 +74,4 @@ To run the test suite:
 pytest
 ```
 
-This includes test coverage for the database seeder to ensure data integrity.
+This includes test coverage for the API endpoints, database seeder, and CLI functionality.

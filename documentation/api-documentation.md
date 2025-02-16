@@ -1,4 +1,18 @@
-# API Documentation
+# Document Manager API Documentation
+
+## Overview
+
+The Document Manager provides two interfaces for managing documents:
+1. A REST API (this document)
+2. A Command Line Interface (CLI)
+
+## CLI Integration
+
+The CLI provides a complementary interface to the API, using the same underlying services and repositories. This ensures consistency between both interfaces. For CLI usage, see the README.md file.
+
+## API Endpoints
+
+### Documents API
 
 ## Base URL
 All API endpoints are prefixed with `/api`
@@ -103,4 +117,3 @@ All endpoints follow a consistent error response format:
     "code": "ERROR_CODE",
     "status": 400
 }
-```
