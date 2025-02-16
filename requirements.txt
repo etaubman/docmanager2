@@ -9,3 +9,6 @@ pytest>=7.4.0
 httpx>=0.24.0  # Required for FastAPI TestClient
 pytest-asyncio>=0.21.0  # For testing async functions
 pytest-cov>=4.1.0  # For test coverage reports
+aioboto3>=11.3.0  # For async AWS S3 operations
+python-dotenv>=1.0.0  # For environment variables management
+asyncssh>=2.13.1  # For async SFTP operations
